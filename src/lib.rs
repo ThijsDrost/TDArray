@@ -39,6 +39,6 @@ mod tests {
         // let _ = a[Indexer1D::<5>{}];
 
         let e = Array1D{data: [[9, 2], [3, 4]]};
-        let f = e  + a.clone();
+        let f = e + a.clone();
     }
 }

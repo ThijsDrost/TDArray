@@ -150,3 +150,25 @@ pub fn mk_from_vec(input: TokenStream) -> TokenStream {
         n=num);
     output.parse().unwrap()
 }
+
+#[proc_macro]
+pub fn mk_impl_func(input: TokenStream) -> TokenStream {
+    let values = input.to_string();
+    let values: Vec<&str> = values.split(",").collect();
+    let trait_name = values[0];
+    let func_name = values[1];
+    let parameter_name = values[2];
+    let num = values[3].parse::<usize>().unwrap();
+    let output = format!("\
+    impl<T: {trait_name}<T, Output=T>, {const_D}> $trait<T> for Array{num}D<T, {d_vals}> where [(); {d_mul}]:,
+        {{
+            type Output = Array1D<T, {d_vals}>;
+
+            fn {func_name}(self, {parameter_name}: T) -> Self::Output {{
+                let data = core::array::from_fn(|i| self.data[i].clone().{func_name}(rhs.clone()));
+                Array1D{{data}}
+            }}
+        }}
+    ", const_D=const_x_vals_str(num, "D"), d_vals=x_vals_str(num, "D"), d_mul=x_mult_str(num, "D"));
+    output.parse().unwrap()
+}
