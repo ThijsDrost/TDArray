@@ -1,0 +1,11 @@
+[package]
+name = "TDArray"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+num-traits = "0.2.19"
+const_panic = "0.2.8"
+const_format = {version = "0.2.32", features = ["assertc"] }
+check_macro = {path = 'check_macro'}
+proc_macro = {path = 'proc_macro' }
