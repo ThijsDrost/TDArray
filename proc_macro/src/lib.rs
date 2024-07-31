@@ -151,24 +151,115 @@ pub fn mk_from_vec(input: TokenStream) -> TokenStream {
     output.parse().unwrap()
 }
 
+/// This macro generates the implementation of a math operator trait for an ArrayND type.
+/// The input is a comma seperated string of the form:
+/// trait_name, func_name, parameter_name, num
 #[proc_macro]
-pub fn mk_impl_func(input: TokenStream) -> TokenStream {
+pub fn mk_impl_math(input: TokenStream) -> TokenStream {
     let values = input.to_string();
     let values: Vec<&str> = values.split(",").collect();
+    if values.len() != 4 {
+        panic!("Expected 4 comma seperated values, got {}", values.len());
+    }
     let trait_name = values[0];
     let func_name = values[1];
     let parameter_name = values[2];
-    let num = values[3].parse::<usize>().unwrap();
-    let output = format!("\
-    impl<T: {trait_name}<T, Output=T>, {const_D}> $trait<T> for Array{num}D<T, {d_vals}> where [(); {d_mul}]:,
-        {{
-            type Output = Array1D<T, {d_vals}>;
+    let num = values[3].trim().parse::<usize>().expect("Expected a usize as the last argument");
 
+    let output = format!("\
+    impl<T: {trait_name}<T, Output=T> + Clone, {const_D}> {trait_name}<T> for Array{num}D<T, {d_vals}> where [(); {d_mul}]:,
+        {{
+            type Output = Array{num}D<T, {d_vals}>;
+
+            /// This function performs the operation {func_name} on the array, it does not mutate the array.
             fn {func_name}(self, {parameter_name}: T) -> Self::Output {{
-                let data = core::array::from_fn(|i| self.data[i].clone().{func_name}(rhs.clone()));
-                Array1D{{data}}
+                let data = core::array::from_fn(|i| self.data[i].clone().{func_name}({parameter_name}.clone()));
+                Array{num}D{{data}}
             }}
         }}
     ", const_D=const_x_vals_str(num, "D"), d_vals=x_vals_str(num, "D"), d_mul=x_mult_str(num, "D"));
     output.parse().unwrap()
 }
+
+/// This macro generates the implementation of an inplace math trait for an ArrayND type.
+/// The input is a comma seperated string of the form:
+/// trait_name, func_name, parameter_name, num
+#[proc_macro]
+pub fn mk_impl_math_inplace(input: TokenStream) -> TokenStream {
+    let values = input.to_string();
+    let values: Vec<&str> = values.split(",").collect();
+    if values.len() != 4 {
+        panic!("Expected 4 comma seperated values, got {}", values.len());
+    }
+    let trait_name = values[0];
+    let func_name = values[1];
+    let parameter_name = values[2];
+    let num = values[3].trim().parse::<usize>().expect("Expected a usize as the last argument");
+
+    let output = format!("\
+    impl<T: {trait_name} + Clone, {const_D}> {trait_name}<T> for Array{num}D<T, {d_vals}> where [(); {d_mul}]:,
+        {{
+            /// This function performs the inplace operation {func_name} on the array, it mutates the array.
+            fn {func_name}(&mut self, {parameter_name}: T) {{
+                for i in 0..({d_mul}) {{
+                    self.data[i].{func_name}({parameter_name}.clone());
+                }}
+            }}
+        }}
+    ", const_D=const_x_vals_str(num, "D"), d_vals=x_vals_str(num, "D"), d_mul=x_mult_str(num, "D"));
+    output.parse().unwrap()
+}
+
+#[proc_macro]
+pub fn mk_impl_reshape(input: TokenStream) -> TokenStream {
+    let values = input.to_string();
+    let values: Vec<&str> = values.split("to").collect();
+    if values.len() != 2 {
+        panic!("Expected 2 values seperated by 'to', got {}", values.len());
+    }
+    let from = values[0].trim().parse::<usize>().expect("Expected a usize as the first argument");
+    let to = values[1].trim().parse::<usize>().expect("Expected a usize as the second argument");
+    let output = format!("\
+    impl<T: Clone, {d_from_const}> Array{from}D<T, {d_vals}> where [(); {d_mul}]:,
+    {{
+        /// This function reshapes the array to a new shape.
+        pub fn reshape_to_{to}d<{d_to_const}>(&self) -> Array{to}D<&T, {to_vals}> where [(); {d_to_mul}]:,
+        {{
+            let data = core::array::from_fn(|i| &self.data[i]);
+            Array{to}D{{data}}
+        }}
+    }}", d_from_const=const_x_vals_str(from, "D1_"), from=from, d_to_const=const_x_vals_str(to, "D2_"),
+         d_vals=x_vals_str(from, "D1_"), d_mul=x_mult_str(from, "D1_"), to=to, to_vals=x_vals_str(to, "D2_"),
+         d_to_mul=x_mult_str(to, "D2_"));
+    output.parse().unwrap()
+}
+
+/// This macro replaces the `${i}` in the first argument with 1 to the value after the `i`th `#`.
+/// The first argument cannot contain any `#`.
+///
+/// Example:
+/// mk_over_nums!("$1_$2; #2 #3") -> $1_1;\n $1_2;\n $1_3;\n $2_1;\n $2_2;\n $2_3;\n
+#[proc_macro]
+pub fn mk_over_nums(input: TokenStream) -> TokenStream {
+    let values = input.to_string();
+
+    let mut values: Vec<&str> = values.split(" #").collect();
+    let mut output = values[0].to_owned();
+    output.push_str("\n");
+    values.remove(0);
+
+    for i in 1..=values.len() {
+        let mut temp = "".to_owned();
+        if !output.contains(&format!("${}", i)) {
+            panic!("Expected at least one ${} in the first argument to replace with the index", i);
+        }
+        let num = values[i-1].trim().parse::<usize>().expect(&format!("Expected a usize as argument {}", i));
+        for j in 1..=num {
+            temp.push_str(&output.replace(&format!("${}", i), &j.to_string()));
+        }
+        output = temp;
+    }
+    println!("{:?}", output);
+    output.parse().unwrap()
+}
+

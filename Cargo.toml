@@ -9,3 +9,4 @@ const_panic = "0.2.8"
 const_format = {version = "0.2.32", features = ["assertc"] }
 check_macro = {path = 'check_macro'}
 proc_macro = {path = 'proc_macro' }
+regex = "1.5.4"

@@ -1,41 +1,17 @@
-use crate::array::Array1D;
+use crate::array::{Array1D, Array2D, Array3D, Array4D, Array5D};
 use num_traits::{Pow};
 use std::ops::{Mul, Add, Div, Sub, AddAssign, SubAssign, MulAssign, DivAssign};
+use proc_macro::{mk_impl_math, mk_impl_math_inplace, mk_impl_reshape, mk_over_nums};
 
-macro_rules! impl_math_ops {
-    ($trait:ident, $method:ident) => {
-        impl<T: Clone + $trait<T, Output=T>, const D1: usize> $trait<T> for Array1D<T, D1> where [(); D1]:,
-        {
-            type Output = Array1D<T, D1>;
+mk_over_nums!(mk_impl_math!(Add, add, rhs, $1); #5);
+mk_over_nums!(mk_impl_math!(Div, div, rhs, $1); #5);
+mk_over_nums!(mk_impl_math!(Mul, mul, rhs, $1); #5);
+mk_over_nums!(mk_impl_math!(Sub, sub, rhs, $1); #5);
+mk_over_nums!(mk_impl_math!(Pow, pow, exponent, $1); #5);
 
-            fn $method(self, rhs: T) -> Self::Output {
-                let data = core::array::from_fn(|i| self.data[i].clone().$method(rhs.clone()));
-                Array1D{data}
-            }
-        }
-    };
-}
+mk_over_nums!(mk_impl_math_inplace!(AddAssign, add_assign, rhs, $1); #5);
+mk_over_nums!(mk_impl_math_inplace!(SubAssign, sub_assign, rhs, $1); #5);
+mk_over_nums!(mk_impl_math_inplace!(MulAssign, mul_assign, rhs, $1); #5);
+mk_over_nums!(mk_impl_math_inplace!(DivAssign, div_assign, rhs, $1); #5);
 
-impl_math_ops!(Add, add);
-impl_math_ops!(Div, div);
-impl_math_ops!(Mul, mul);
-impl_math_ops!(Sub, sub);
-impl_math_ops!(Pow, pow);
-
-macro_rules! impl_math_ops_inplace {
-    ($trait:ident, $method:ident) => {
-        impl<T: Clone + $trait<T>, const D1: usize> $trait<T> for Array1D<T, D1> where [(); D1]:,
-        {
-            fn $method(&mut self, rhs: T) {
-                for i in 0..D1 {
-                    self.data[i].$method(rhs.clone());
-                }
-            }
-        }
-    };
-}
-
-impl_math_ops_inplace!(AddAssign, add_assign);
-impl_math_ops_inplace!(SubAssign, sub_assign);
-impl_math_ops_inplace!(MulAssign, mul_assign);
-impl_math_ops_inplace!(DivAssign, div_assign);
+mk_over_nums!(mk_impl_reshape!($1 to $2); #5 #5);
