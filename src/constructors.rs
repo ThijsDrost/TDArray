@@ -1,5 +1,6 @@
 use crate::array::{Array1D, Array2D, Array3D, Array4D, Array5D};
 use num_traits::{Float, Num, Zero, One};
+use proc_macro::{mk_over_nums, mk_impl_from_fn};
 
 impl <T: Float, const D1: usize> Array1D<T, D1> {
     pub fn linspace(start: T, stop: T) -> Self {
@@ -15,16 +16,13 @@ impl <T: Float, const D1: usize> Array1D<T, D1> {
     }
 }
 
-impl <T: Zero, const D1: usize> Array1D<T, D1> {
-    pub fn zeros() -> Self {
-        let data = core::array::from_fn(|_| T::zero());
-        Array1D{data}
+
+macro_rules! mk_impl_constructor {
+    ($val: literal) => {
+        mk_impl_from_fn!(Zero; T::zero(); zeros; $val;);
+        mk_impl_from_fn!(One; T::one(); ones; $val;);
+        mk_impl_from_fn!(Clone; value.clone(); full; $val; value: T);
     }
 }
 
-impl <T: One, const D1: usize> Array1D<T, D1> {
-    pub fn ones() -> Self {
-        let data = core::array::from_fn(|_| T::one());
-        Array1D{data}
-    }
-}
+mk_over_nums!(mk_impl_constructor!($1); #5);

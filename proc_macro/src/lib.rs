@@ -57,9 +57,8 @@ pub fn mk_indexer_impl(input: TokenStream) -> TokenStream {
         fn index(&self, index: Indexer{}D<{}>) -> &T {{\n\t\t\
             let _ = <{} as Index{}D<{}>>::RESULT;\n\t\t\
             &self.data[{}]}}\n\
-    }}\n",
-                          const_DI_vals_str(num), num, x_vals_str(num, "I"), array_str(num), x_mult_str(num, "D"), num,
-                          x_vals_str(num, "I"), array_str(num), num, DI_vals_str(num), calc_index(num));
+    }}\n", const_DI_vals_str(num), num, x_vals_str(num, "I"), array_str(num), x_mult_str(num, "D"), num,
+           x_vals_str(num, "I"), array_str(num), num, DI_vals_str(num), calc_index(num));
 
     output.push_str(&output2);
     output.parse().unwrap()
@@ -109,13 +108,6 @@ pub fn mk_impl_index_mut(input: TokenStream) -> TokenStream {
     }}", const_x_vals_str(num, "D"), num, x_vals_str(num, "D"), x_mult_str(num, "D"));
     output.parse().unwrap()
 }
-
-// impl <T, const D1: usize, const D2: usize> IsComp1D<D1, D2> for Array1D<T, D1> {
-//     const RESULT: () = concat_assert!((D1 == D2) | (D1 == 1) | (D2 == 1),
-//         "\nShape mismatch! For each axis both arrays should have the same size or one of them should be 1.\n",
-//         "Shape array 1: (", D1,
-//         ",), Shape array 2: (", D2, ",) \n");
-// }
 
 #[proc_macro]
 pub fn mk_is_comp_nd(input: TokenStream) -> TokenStream {
@@ -238,7 +230,7 @@ pub fn mk_impl_reshape(input: TokenStream) -> TokenStream {
 /// The first argument cannot contain any `#`.
 ///
 /// Example:
-/// mk_over_nums!("$1_$2; #2 #3") -> $1_1;\n $1_2;\n $1_3;\n $2_1;\n $2_2;\n $2_3;\n
+/// mk_over_nums!("$1_$2; #2 #3") -> 1_1;\n 1_2;\n 1_3;\n 2_1;\n 2_2;\n 2_3;\n
 #[proc_macro]
 pub fn mk_over_nums(input: TokenStream) -> TokenStream {
     let values = input.to_string();
@@ -259,7 +251,29 @@ pub fn mk_over_nums(input: TokenStream) -> TokenStream {
         }
         output = temp;
     }
-    println!("{:?}", output);
     output.parse().unwrap()
 }
 
+#[proc_macro]
+pub fn mk_impl_from_fn(input: TokenStream) -> TokenStream {
+    let input = input.to_string();
+    let values: Vec<&str> = input.split(";").collect();
+    if values.len() != 5 {
+        panic!("Expected 5 values seperated by ';', got {}", values.len());
+    }
+    let traits = values[0].trim();
+    let func_in = values[1].trim();
+    let func_out = values[2].trim();
+    let num = values[3].trim().parse::<usize>().expect("Expected a usize as the only argument");
+    let parameters = values[4].trim();
+    format!("\
+    impl<T: {traits}, {const_D}> Array{num}D<T, {d_vals}> where [(); {d_mul}]:,
+    {{
+        pub fn {func_out}({parameters}) -> Self {{
+            let data = core::array::from_fn(|_| {func_in});
+            Array{num}D{{data}}
+        }}
+    }}",
+    const_D=const_x_vals_str(num, "D"), d_vals=x_vals_str(num, "D"), d_mul=x_mult_str(num, "D")).parse().unwrap()
+
+}

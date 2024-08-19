@@ -1,7 +1,7 @@
 use std::ops::{Index, IndexMut, Add, Sub};
 use std::clone::Clone;
 use const_panic::concat_assert;
-use proc_macro::*;
+use proc_macro::{mk_over_nums, mk_array, mk_impl_clone, mk_impl_index, mk_impl_index_mut};
 
 struct CompatibleSize<const DATA: bool> {}
 
@@ -31,12 +31,7 @@ macro_rules! mk_array_impl {
     }
 }
 
-mk_array_impl!(1);
-mk_array_impl!(2);
-mk_array_impl!(3);
-mk_array_impl!(4);
-mk_array_impl!(5);
-
+mk_over_nums!(mk_array_impl!($1); #5);
 
 pub const fn biggest(a: usize, b: usize) -> usize {
     // check_size_1d(a, b);

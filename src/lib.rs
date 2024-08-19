@@ -4,7 +4,9 @@ mod indexer;
 mod ops;
 mod constructors;
 mod maths;
+mod array_iterator;
 
+const MAX_SIZE: usize = 7;
 
 #[cfg(test)]
 mod tests {
@@ -19,6 +21,12 @@ mod tests {
         assert_eq!(a[2], 3);
         a[0] = 4;
         assert_eq!(a[0], 4);
+    }
+
+    #[test]
+    fn test_zeros() {
+        let a = Array1D::<u32, 10>::zeros();
+        assert_eq!(a.data, [0u32; 10])
     }
 
     #[test]
@@ -39,6 +47,6 @@ mod tests {
         // let _ = a[Indexer1D::<5>{}];
 
         let e = Array1D{data: [[9, 2], [3, 4]]};
-        let f = e + a.clone();
+        // let f = e + a.clone();
     }
 }
