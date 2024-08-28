@@ -5,6 +5,7 @@ mod ops;
 mod constructors;
 mod maths;
 mod array_iterator;
+mod const_funcs;
 
 const MAX_SIZE: usize = 7;
 
