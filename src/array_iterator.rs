@@ -1,4 +1,4 @@
-use crate::array::{Array1D, Array2D, Array3D, Array4D, Array5D};
+// use crate::array::{Array1D, Array2D, Array3D, Array4D, Array5D};
 use std::iter::Iterator;
 
 struct ArrayIterator<const D1: usize> {

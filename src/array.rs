@@ -3,6 +3,43 @@ use std::clone::Clone;
 use const_panic::concat_assert;
 use proc_macro::{mk_over_nums, mk_array, mk_impl_clone, mk_impl_index, mk_impl_index_mut};
 
+trait Array<U: Into<usize>>: Index<U> + IndexMut<U> {
+    type ArrayOutput;
+    const NDIM: usize;
+
+    fn shape(&self) -> [usize; Self::NDIM];
+    fn size(&self) -> usize;
+    fn flatten(&self) -> Vec<Self::Output>;  // TODO: Should have output Array1D, but how to get size?
+
+    fn unwrap_indexes(&self, indexes: [usize; Self::NDIM]) -> usize {
+        let mut index = 0;
+        let shape = self.shape();
+        for i in 0..Self::NDIM {
+            index += indexes[i]*shape[i];
+        }
+        index
+    }
+
+    fn wrap_index(&self, index: usize) -> [usize; Self::NDIM] {
+        let mut indexes = [0; Self::NDIM];
+        let shape = self.shape();
+        let mut index = index;
+        for i in (0..Self::NDIM).rev() {
+            indexes[i] = index % shape[i];
+            index /= shape[i];
+        }
+        indexes
+    }
+    fn index_wrap<S: Into<i64>>(&self, index: S) -> &Self::Output;
+    fn index_wrap_mut<S: Into<i64>>(&mut self, index: S) -> &mut Self::Output;
+}
+
+trait NumArray<U: Into<usize>>: Array<U> + Add<Self> + Sub<Self> + Sized {
+    fn zeros() -> Self::ArrayOutput;
+    fn ones() -> Self::ArrayOutput;
+    fn full(value: <Self as Index<U>>::Output) -> Self::ArrayOutput;
+}
+
 struct CompatibleSize<const DATA: bool> {}
 
 trait IsCompatible {}
