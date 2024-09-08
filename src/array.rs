@@ -3,13 +3,20 @@ use std::clone::Clone;
 use const_panic::concat_assert;
 use proc_macro::{mk_over_nums, mk_array, mk_impl_clone, mk_impl_index, mk_impl_index_mut};
 
-trait Array<U: Into<usize>>: Index<U> + IndexMut<U> {
+trait Array<T, U: Into<usize>>: Index<U> + IndexMut<U>
+{
     type ArrayOutput;
     const NDIM: usize;
+    const SIZE: usize;
 
     fn shape(&self) -> [usize; Self::NDIM];
-    fn size(&self) -> usize;
-    fn flatten(&self) -> Vec<Self::Output>;  // TODO: Should have output Array1D, but how to get size?
+    fn size(&self) -> usize {
+        Self::SIZE
+    }
+    fn ndim(&self) -> usize {
+        Self::NDIM
+    }
+    fn flatten(&self) -> Array1D<T, { Self::SIZE }>;
 
     fn unwrap_indexes(&self, indexes: [usize; Self::NDIM]) -> usize {
         let mut index = 0;
@@ -34,7 +41,7 @@ trait Array<U: Into<usize>>: Index<U> + IndexMut<U> {
     fn index_wrap_mut<S: Into<i64>>(&mut self, index: S) -> &mut Self::Output;
 }
 
-trait NumArray<U: Into<usize>>: Array<U> + Add<Self> + Sub<Self> + Sized {
+trait NumArray<T, U: Into<usize>>: Array<T, U> + Add<Self> + Sub<Self> + Sized {
     fn zeros() -> Self::ArrayOutput;
     fn ones() -> Self::ArrayOutput;
     fn full(value: <Self as Index<U>>::Output) -> Self::ArrayOutput;

@@ -264,7 +264,7 @@ pub fn mk_impl_from_fn(input: TokenStream) -> TokenStream {
     let traits = values[0].trim();
     let func_in = values[1].trim();
     let func_out = values[2].trim();
-    let num = values[3].trim().parse::<usize>().expect("Expected a usize as the only argument");
+    let num = values[3].trim().parse::<usize>().expect("Expected a usize as the fourth argument");
     let parameters = values[4].trim();
     format!("\
     impl<T: {traits}, {const_D}> Array{num}D<T, {d_vals}> where [(); {d_mul}]:,
@@ -277,3 +277,28 @@ pub fn mk_impl_from_fn(input: TokenStream) -> TokenStream {
     const_D=const_x_vals_str(num, "D"), d_vals=x_vals_str(num, "D"), d_mul=x_mult_str(num, "D")).parse().unwrap()
 
 }
+
+fn stream_to_string_vec<'a>(input: TokenStream, num: usize) -> Vec<String> {
+    let input = input.to_string();
+    let values: Vec<String> = input.split(";").map(|x| x.to_owned()).collect();
+    if values.len() != num {
+        panic!("Expected {} values seperated by ';', got {}", num, values.len());
+    }
+    values
+}
+
+#[proc_macro]
+pub fn proc_const_x_vals_str(input: TokenStream) -> TokenStream {
+    let input = stream_to_string_vec(input, 2);
+    let name = input[0].trim();
+    let num = input[1].trim().parse::<usize>().expect("Expected a usize as the second argument");
+    pre_post_vals(&format!("const {}", name), ": usize", num).parse().unwrap()
+}
+
+// #[proc_macro]
+// pub fn proc_const_x_vals_str2(input: TokenStream) -> TokenStream {
+//     let input = stream_to_string_vec(input, 2);
+//     let name = input[0].trim();
+//     let num = input[1].trim().parse::<usize>().expect("Expected a usize as the second argument");
+//     format!("\"{}\"", pre_post_vals(&format!("const {}", name), ": usize", num)).parse().unwrap()
+// }
